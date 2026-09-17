@@ -3,7 +3,7 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
-extern void MRMediaRemoteSendCommand(unsigned int command, id userInfo);
+extern "C" void MRMediaRemoteSendCommand(unsigned int command, id userInfo);
 
 static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbuttonhooks");
 
