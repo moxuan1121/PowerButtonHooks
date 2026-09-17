@@ -102,7 +102,6 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
     NSArray<NSArray<NSString *> *> *rows = @[
         @[@"双击", @"DoublePressAction", @"media"],
         @[@"三连击", @"TriplePressAction", @"flashlight"],
-        @[@"四连击", @"QuadruplePressAction", @"ai-window"],
         @[@"长按", @"LongPressAction", @"ai-camera"]
     ];
 

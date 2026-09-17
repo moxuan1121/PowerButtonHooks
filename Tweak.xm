@@ -12,8 +12,6 @@ static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbutton");
 - (void)setFlashlightLevel:(float)level withError:(NSError **)error;
 @end
 
-static AVFlashlight *PBHSideButtonFlashlight;
-
 static BOOL PBHEnabled(void) {
     CFPreferencesAppSynchronize(PBHPreferences);
     CFPropertyListRef value = CFPreferencesCopyAppValue(CFSTR("Enabled"), PBHPreferences);
@@ -39,9 +37,13 @@ static void PBHPost(CFStringRef name) {
     );
 }
 
-static id PBHFlashlight(void) {
-    if (!PBHSideButtonFlashlight) PBHSideButtonFlashlight = [objc_getClass("AVFlashlight") new];
-    return PBHSideButtonFlashlight;
+static AVFlashlight *PBHFlashlight(void) {
+    static AVFlashlight *flashlight;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        flashlight = [objc_getClass("AVFlashlight") new];
+    });
+    return flashlight;
 }
 
 static BOOL PBHToggleMedia(void) {
@@ -102,15 +104,7 @@ static BOOL PBHIsPurchaseAuthenticationActive(void) {
 
 static void (*PBHOriginalDouble)(id, SEL, id);
 static void (*PBHOriginalTriple)(id, SEL, id);
-static void (*PBHOriginalQuadruple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
-static id (*PBHOriginalFlashlightInit)(id, SEL);
-
-static id PBHFlashlightInit(id self, SEL command) {
-    if (PBHSideButtonFlashlight) return PBHSideButtonFlashlight;
-    PBHSideButtonFlashlight = PBHOriginalFlashlightInit(self, command);
-    return PBHSideButtonFlashlight;
-}
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -125,12 +119,6 @@ static void PBHTriple(id self, SEL command, id press) {
     }
 }
 
-static void PBHQuadruple(id self, SEL command, id press) {
-    if (!PBHEnabled() || !PBHPerformAction(PBHAction(CFSTR("QuadruplePressAction"), @"ai-window"))) {
-        PBHOriginalQuadruple(self, command, press);
-    }
-}
-
 static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
     if (!PBHEnabled()) {
         PBHOriginalLong(self, command, recognizer);
@@ -141,7 +129,7 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
-    return PBHEnabled() && ![PBHAction(key, fallback) isEqualToString:@"none"];
+    return ![PBHAction(key, fallback) isEqualToString:@"none"];
 }
 
 static void PBHHook(Class target, SEL selector, IMP replacement, IMP *original) {
@@ -155,25 +143,11 @@ __attribute__((constructor)) static void PBHInitialize(void) {
         Class button = objc_getClass("SBLockHardwareButton");
         if (!button) return;
 
-        NSArray<NSString *> *configuredActions = @[
-            PBHAction(CFSTR("DoublePressAction"), @"media"),
-            PBHAction(CFSTR("TriplePressAction"), @"flashlight"),
-            PBHAction(CFSTR("QuadruplePressAction"), @"ai-window"),
-            PBHAction(CFSTR("LongPressAction"), @"ai-camera")
-        ];
-        if (PBHEnabled() && [configuredActions containsObject:@"flashlight"]) {
-            Class flashlight = objc_getClass("AVFlashlight");
-            PBHHook(flashlight, @selector(init), (IMP)PBHFlashlightInit, (IMP *)&PBHOriginalFlashlightInit);
-        }
-
         if (PBHShouldHook(CFSTR("DoublePressAction"), @"media")) {
             PBHHook(button, @selector(doublePress:), (IMP)PBHDouble, (IMP *)&PBHOriginalDouble);
         }
         if (PBHShouldHook(CFSTR("TriplePressAction"), @"flashlight")) {
             PBHHook(button, @selector(triplePress:), (IMP)PBHTriple, (IMP *)&PBHOriginalTriple);
-        }
-        if (PBHShouldHook(CFSTR("QuadruplePressAction"), @"ai-window")) {
-            PBHHook(button, @selector(quadruplePress:), (IMP)PBHQuadruple, (IMP *)&PBHOriginalQuadruple);
         }
         if (PBHShouldHook(CFSTR("LongPressAction"), @"ai-camera")) {
             PBHHook(button, @selector(longPress:), (IMP)PBHLong, (IMP *)&PBHOriginalLong);

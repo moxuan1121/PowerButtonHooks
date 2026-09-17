@@ -1,6 +1,6 @@
 # PowerButton
 
-RootHide-only iOS 15 clean-room recreation of the physical side-button gesture hooks found in `SquidGesture 1.3.7`. It intentionally contains only the double-, triple-, quadruple-, and long-press path; unrelated screen, status-bar, dock, volume, and edge gestures are excluded.
+RootHide-only iOS 15 clean-room recreation of the physical side-button gesture hooks found in `SquidGesture 1.3.7`. It intentionally contains only the double-, triple-, and long-press path; unrelated screen, status-bar, dock, volume, and edge gestures are excluded.
 
 ## What it hooks
 
@@ -8,7 +8,6 @@ RootHide-only iOS 15 clean-room recreation of the physical side-button gesture h
 
 - `doublePress:`
 - `triplePress:`
-- `quadruplePress:`
 - `longPress:`
 
 The double-press hook always passes through to Apple's original implementation while a purchase/authentication overlay belongs to either:
@@ -22,7 +21,7 @@ This is the important reason a configured double-press action does not steal the
 
 Package and preferences identifier: `com.moxuan1121.powerbutton`
 
-The Settings bundle contains a master switch plus selectors for double press, triple press, quadruple press, and long press. Every selector can dispatch one of five actions:
+The Settings bundle contains a master switch plus selectors for double press, triple press, and long press. Every selector can dispatch one of five actions:
 
 - None. After a SpringBoard restart, that selector is not hooked at all.
 - Media play/pause through MediaRemote.
@@ -30,7 +29,7 @@ The Settings bundle contains a master switch plus selectors for double press, tr
 - RegionShot AI window through `com.moxuan.regionshot/AIWindow`.
 - RegionShot AI camera through `com.moxuan.regionshot/AICamera`.
 
-AI actions require [RegionShot](https://github.com/moxuan1121/RegionShot) to be installed. Defaults are media for double press, flashlight for triple press, AI window for quadruple press, and AI camera for long press. Changing to or from None requires a SpringBoard restart because hook registration happens once when SpringBoard starts.
+AI actions require [RegionShot](https://github.com/moxuan1121/RegionShot) to be installed. Defaults are media for double press, flashlight for triple press, and AI camera for long press. Changing to or from None requires a SpringBoard restart because hook registration happens once when SpringBoard starts.
 
 The bundle is installed at `/Library/PreferenceBundles/PowerButtonPreferences.bundle`. RootHide's package scheme relocates that path into the device's current randomized `.jbroot-*` root, so no device-specific `.jbroot-E05E6FF9B17D8763` value is hard-coded.
 

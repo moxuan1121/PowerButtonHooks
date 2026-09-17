@@ -20,8 +20,15 @@ class SourceContractTest(unittest.TestCase):
         )
 
     def test_all_power_gestures_are_hooked(self):
-        for selector in ("doublePress:", "triplePress:", "quadruplePress:", "longPress:"):
+        for selector in ("doublePress:", "triplePress:", "longPress:"):
             self.assertIn(selector, SOURCE)
+        self.assertNotIn("quadruplePress:", SOURCE)
+        self.assertNotIn("QuadruplePressAction", SOURCE)
+        self.assertNotIn("QuadruplePressAction", PREFERENCES)
+        self.assertNotIn("四连击", PREFERENCES)
+        self.assertNotIn("PBHFlashlightInit", SOURCE)
+        self.assertNotIn("configuredActions", SOURCE)
+        self.assertIn('return ![PBHAction(key, fallback) isEqualToString:@"none"]', SOURCE)
         self.assertIn('objc_getClass("SBLockHardwareButton")', SOURCE)
         self.assertNotIn('objc_getClass("SBLockHardwareButtonActions")', SOURCE)
 
@@ -63,7 +70,7 @@ class SourceContractTest(unittest.TestCase):
             self.assertIn(implementation, PREFERENCES if value == "none" else SOURCE)
             self.assertIn(f'@"{value}"', PREFERENCES)
 
-        for key in ("Enabled", "DoublePressAction", "TriplePressAction", "QuadruplePressAction", "LongPressAction"):
+        for key in ("Enabled", "DoublePressAction", "TriplePressAction", "LongPressAction"):
             self.assertIn(f'@"{key}"', PREFERENCES)
 
         self.assertIn('isEqualToString:@"none"', SOURCE)

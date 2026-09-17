@@ -17,18 +17,17 @@ The arm64 constructor at `0x2cf58` calls `MSHookMessageEx`. For `SBLockHardwareB
 
 | Selector | Replacement IMP | Original IMP slot |
 | --- | ---: | ---: |
-| `quadruplePress:` | `0x41800` | `0x5cbe8` |
 | `triplePress:` | `0x41c90` | `0x5cbf0` |
 | `doublePress:` | `0x420f8` | `0x5cbf8` |
 | `longPress:` | `0x42e54` | `0x5cc00` |
 
-The encrypted class string used for all four registrations decrypts to `SBLockHardwareButton` (20 characters plus its terminator). All four replacements query `SBLockScreenManager.sharedInstance.coverSheetViewController.isAuthenticated` before dispatching to the tweak's action store (`SGActionStore sg_doAction:`). The long-press replacement also checks the recognizer's `state`, preventing repeated action dispatch as the recognizer changes state.
+The encrypted class string used for these registrations decrypts to `SBLockHardwareButton` (20 characters plus its terminator). The replacements query `SBLockScreenManager.sharedInstance.coverSheetViewController.isAuthenticated` before dispatching to the tweak's action store (`SGActionStore sg_doAction:`). The long-press replacement also checks the recognizer's `state`, preventing repeated action dispatch as the recognizer changes state.
 
-`hardwareButtonInteractionForLockButton` and `consumeTriplePressUp` also appear in the binary, but they belong to the accessibility-action implementation (`SGActionStore sg_triggerAccessibility`), not to the four side-button hook registrations above.
+`hardwareButtonInteractionForLockButton` and `consumeTriplePressUp` also appear in the binary, but they belong to the accessibility-action implementation (`SGActionStore sg_triggerAccessibility`), not to the retained side-button hook registrations above.
 
 ## Double-press purchase/Face ID passthrough
 
-The replacement at `0x420f8` has an extra guard absent from the triple- and quadruple-press hooks:
+The replacement at `0x420f8` has an extra guard absent from the triple-press hook:
 
 1. Obtain `UIApplication.sharedApplication.keyWindow`.
 2. Require the window to be an `SBTransientOverlayWindow`.
@@ -69,4 +68,4 @@ SBLockHardwareButton.doublePress:
 
 These are private SpringBoard interfaces and can change between iOS releases. This reconstructed package supports iOS 15.x. Disabling the master switch restores every original handler, and an unavailable/unknown action falls back to the original handler. Purchase authentication is always passed through regardless of configuration.
 
-The reconstruction now registers these four methods with `MSHookMessageEx`, matching the original constructor instead of relying on automatic Logos hook setup. Each registration is conditional at SpringBoard startup; an action configured as `none` does not install its corresponding hook.
+The reconstruction now registers the retained three methods with `MSHookMessageEx`, matching the original constructor instead of relying on automatic Logos hook setup. Each registration is conditional at SpringBoard startup; an action configured as `none` does not install its corresponding hook.
