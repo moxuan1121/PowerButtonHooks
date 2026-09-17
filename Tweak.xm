@@ -10,7 +10,8 @@ static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbuttonhooks
 static BOOL PBHEnabled(void) {
     CFPreferencesAppSynchronize(PBHPreferences);
     CFPropertyListRef value = CFPreferencesCopyAppValue(CFSTR("Enabled"), PBHPreferences);
-    BOOL enabled = !value || (CFGetTypeID(value) == CFBooleanGetTypeID() && CFBooleanGetValue(value));
+    BOOL enabled = !value || (CFGetTypeID(value) == CFBooleanGetTypeID() &&
+                              CFBooleanGetValue((CFBooleanRef)value));
     if (value) CFRelease(value);
     return enabled;
 }
@@ -75,7 +76,8 @@ static BOOL PBHPerformAction(NSString *action) {
 }
 
 static BOOL PBHIsPurchaseAuthenticationActive(void) {
-    UIWindow *window = UIApplication.sharedApplication.keyWindow;
+    id (*sendObject)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+    UIWindow *window = sendObject(UIApplication.sharedApplication, NSSelectorFromString(@"keyWindow"));
     Class overlayClass = objc_getClass("SBTransientOverlayWindow");
     if (!window || !overlayClass || ![window isKindOfClass:overlayClass]) return NO;
 
@@ -89,7 +91,6 @@ static BOOL PBHIsPurchaseAuthenticationActive(void) {
     SEL bundleSelector = NSSelectorFromString(@"_axRemoteServiceBundleIdentifier");
     NSString *bundleID = nil;
     if ([window respondsToSelector:bundleSelector]) {
-        id (*sendObject)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
         bundleID = sendObject(window, bundleSelector);
     }
 
