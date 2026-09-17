@@ -45,7 +45,7 @@ class SourceContractTest(unittest.TestCase):
 
     def test_requested_actions_and_settings_are_wired(self):
         contracts = {
-            "media": "MRMediaRemoteSendCommand(2, nil)",
+            "media": 'dlsym(mediaRemote, "MRMediaRemoteSendCommand")',
             "flashlight": "setFlashlightLevel:withError:",
             "ai-window": "com.moxuan.regionshot/AIWindow",
             "ai-camera": "com.moxuan.regionshot/AICamera",

@@ -1,9 +1,8 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIKit.h>
+#import <dlfcn.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
-
-extern "C" void MRMediaRemoteSendCommand(unsigned int command, id userInfo);
 
 static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbutton");
 
@@ -46,10 +45,24 @@ static id PBHFlashlight(void) {
     return flashlight;
 }
 
+static BOOL PBHToggleMedia(void) {
+    typedef void (*SendCommand)(unsigned int, id);
+    static SendCommand sendCommand;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        void *mediaRemote = dlopen(
+            "/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_LAZY
+        );
+        sendCommand = mediaRemote ? (SendCommand)dlsym(mediaRemote, "MRMediaRemoteSendCommand") : NULL;
+    });
+    if (!sendCommand) return NO;
+    sendCommand(2, nil);
+    return YES;
+}
+
 static BOOL PBHPerformAction(NSString *action) {
     if ([action isEqualToString:@"media"]) {
-        MRMediaRemoteSendCommand(2, nil); // MediaRemote play/pause toggle.
-        return YES;
+        return PBHToggleMedia();
     }
     if ([action isEqualToString:@"flashlight"]) {
         id flashlight = PBHFlashlight();
