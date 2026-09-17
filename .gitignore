@@ -1,0 +1,7 @@
+.theos/
+packages/
+analysis/
+*.deb
+*.dylib
+__pycache__/
+*.pyc

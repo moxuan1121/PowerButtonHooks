@@ -1,0 +1,34 @@
+name: Build RootHide deb
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source contract
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Install RootHide Theos and SDK
+        run: |
+          git clone --recursive --depth=1 https://github.com/roothide/theos.git "$RUNNER_TEMP/theos"
+          mkdir -p "$RUNNER_TEMP/theos/sdks"
+          curl -fL https://github.com/theos/sdks/releases/latest/download/iPhoneOS16.5.sdk.tar.xz \
+            -o "$RUNNER_TEMP/iPhoneOS16.5.sdk.tar.xz"
+          tar -xf "$RUNNER_TEMP/iPhoneOS16.5.sdk.tar.xz" -C "$RUNNER_TEMP/theos/sdks"
+
+      - name: Build package
+        env:
+          THEOS: ${{ runner.temp }}/theos
+        run: make clean package FINALPACKAGE=1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PowerButtonHooks-roothide
+          path: packages/*.deb
+          if-no-files-found: error
