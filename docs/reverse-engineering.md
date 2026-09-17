@@ -67,4 +67,4 @@ SBLockHardwareButtonActions.doublePress:
 
 ## Compatibility boundary
 
-These are private SpringBoard interfaces and can change between iOS releases. The reconstructed package targets iOS 15.x because that is the original binary's recorded deployment target. Disabling the master switch restores every original handler, and an unavailable/unknown action falls back to the original handler. Purchase authentication is always passed through regardless of configuration.
+These are private SpringBoard interfaces and can change between iOS releases. This reconstructed package deliberately supports only iOS 15.6.x. Disabling the master switch restores every original handler, and an unavailable/unknown action falls back to the original handler. Purchase authentication is always passed through regardless of configuration.

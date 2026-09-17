@@ -1,6 +1,6 @@
 # PowerButtonHooks
 
-RootHide-only clean-room recreation of the physical side-button gesture hooks found in `SquidGesture 1.3.7`. It intentionally contains only the double-, triple-, quadruple-, and long-press path; unrelated screen, status-bar, dock, volume, and edge gestures are excluded.
+RootHide-only iOS 15.6 clean-room recreation of the physical side-button gesture hooks found in `SquidGesture 1.3.7`. It intentionally contains only the double-, triple-, quadruple-, and long-press path; unrelated screen, status-bar, dock, volume, and edge gestures are excluded.
 
 ## What it hooks
 
