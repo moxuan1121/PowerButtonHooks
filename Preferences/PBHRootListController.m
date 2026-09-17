@@ -4,7 +4,76 @@
 
 static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 
+static id PBHReadPreference(NSString *key, id fallback) {
+    CFPropertyListRef value = CFPreferencesCopyAppValue(
+        (__bridge CFStringRef)key, (__bridge CFStringRef)PBHDomain
+    );
+    return value ? CFBridgingRelease(value) : fallback;
+}
+
+static void PBHWritePreference(NSString *key, id value) {
+    CFPreferencesSetAppValue(
+        (__bridge CFStringRef)key, (__bridge CFPropertyListRef)value,
+        (__bridge CFStringRef)PBHDomain
+    );
+    CFPreferencesAppSynchronize((__bridge CFStringRef)PBHDomain);
+}
+
+static NSArray<NSArray<NSString *> *> *PBHActions(void) {
+    return @[
+        @[@"无", @"none"],
+        @[@"媒体播放 / 暂停", @"media"],
+        @[@"手电筒", @"flashlight"],
+        @[@"AI 窗口", @"ai-window"],
+        @[@"AI 相机", @"ai-camera"]
+    ];
+}
+
+@interface PBHActionListController : PSListController
+@end
+
 @interface PBHRootListController : PSListController
+@end
+
+@implementation PBHActionListController {
+    NSString *_preferenceKey;
+    NSString *_defaultAction;
+}
+
+- (void)setSpecifier:(PSSpecifier *)specifier {
+    [super setSpecifier:specifier];
+    _preferenceKey = [[specifier propertyForKey:@"key"] copy];
+    _defaultAction = [[specifier propertyForKey:@"default"] copy];
+    self.title = [specifier propertyForKey:@"actionTitle"];
+}
+
+- (NSArray *)specifiers {
+    if (_specifiers) return _specifiers;
+    NSMutableArray *items = [NSMutableArray array];
+    PSSpecifier *group = [PSSpecifier groupSpecifierWithName:@"选择分发动作"];
+    [group setProperty:@"选择“无”后，重启 SpringBoard 才会完全停止该动作的挂钩。" forKey:@"footerText"];
+    [items addObject:group];
+
+    NSString *current = PBHReadPreference(_preferenceKey, _defaultAction);
+    for (NSArray<NSString *> *entry in PBHActions()) {
+        NSString *title = [current isEqualToString:entry[1]] ? [@"✓ " stringByAppendingString:entry[0]] : entry[0];
+        PSSpecifier *choice = [PSSpecifier preferenceSpecifierNamed:title
+            target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+        [choice setProperty:entry[1] forKey:@"actionValue"];
+        [items addObject:choice];
+    }
+    _specifiers = items.copy;
+    return _specifiers;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PSSpecifier *choice = _specifiers[indexPath.row + 1];
+    NSString *value = [choice propertyForKey:@"actionValue"];
+    if (!value) return;
+    PBHWritePreference(_preferenceKey, value);
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
 @end
 
 
@@ -12,10 +81,9 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 
 - (NSArray *)specifiers {
     if (_specifiers) return _specifiers;
-
     NSMutableArray *items = [NSMutableArray array];
     PSSpecifier *group = [PSSpecifier groupSpecifierWithName:@"电源键动作"];
-    [group setProperty:@"商店购买和系统认证期间，双击始终交还给系统。AI 两项需要已安装 RegionShot。"
+    [group setProperty:@"商店购买和系统认证期间，双击始终交还给系统。AI 两项需要已安装 RegionShot。选择“无”后需重启 SpringBoard 才会卸载对应挂钩。"
                   forKey:@"footerText"];
     [items addObject:group];
 
@@ -27,8 +95,6 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
     [enabled setProperty:[UIImage systemImageNamed:@"power"] forKey:@"iconImage"];
     [items addObject:enabled];
 
-    NSArray<NSString *> *titles = @[@"媒体播放 / 暂停", @"手电筒", @"AI 窗口", @"AI 相机"];
-    NSArray<NSString *> *values = @[@"media", @"flashlight", @"ai-window", @"ai-camera"];
     NSArray<NSArray<NSString *> *> *rows = @[
         @[@"双击", @"DoublePressAction", @"media", @"playpause.fill"],
         @[@"三连击", @"TriplePressAction", @"flashlight", @"lightbulb.fill"],
@@ -38,13 +104,11 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 
     for (NSArray<NSString *> *row in rows) {
         PSSpecifier *action = [PSSpecifier preferenceSpecifierNamed:row[0]
-            target:self set:@selector(setPreferenceValue:specifier:)
-            get:@selector(readPreferenceValue:) detail:NSClassFromString(@"PSListItemsController")
-            cell:PSLinkListCell edit:nil];
+            target:self set:nil get:nil detail:PBHActionListController.class
+            cell:PSLinkCell edit:nil];
         [action setProperty:row[1] forKey:@"key"];
         [action setProperty:row[2] forKey:@"default"];
-        [action setProperty:values forKey:@"validValues"];
-        [action setProperty:titles forKey:@"validTitles"];
+        [action setProperty:row[0] forKey:@"actionTitle"];
         [action setProperty:[UIImage systemImageNamed:row[3]] forKey:@"iconImage"];
         [items addObject:action];
     }
@@ -54,15 +118,11 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 }
 
 - (id)readPreferenceValue:(PSSpecifier *)specifier {
-    NSUserDefaults *preferences = [[NSUserDefaults alloc] initWithSuiteName:PBHDomain];
-    return [preferences objectForKey:[specifier propertyForKey:@"key"]]
-        ?: [specifier propertyForKey:@"default"];
+    return PBHReadPreference([specifier propertyForKey:@"key"], [specifier propertyForKey:@"default"]);
 }
 
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
-    NSUserDefaults *preferences = [[NSUserDefaults alloc] initWithSuiteName:PBHDomain];
-    [preferences setObject:value forKey:[specifier propertyForKey:@"key"]];
-    [preferences synchronize];
+    PBHWritePreference([specifier propertyForKey:@"key"], value);
 }
 
 - (void)viewDidLoad {

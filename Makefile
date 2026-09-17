@@ -10,6 +10,7 @@ TWEAK_NAME = PowerButton
 PowerButton_FILES = Tweak.xm
 PowerButton_CFLAGS = -fobjc-arc
 PowerButton_FRAMEWORKS = UIKit AVFoundation
+PowerButton_PRIVATE_FRAMEWORKS = SpringBoardFoundation
 PowerButton_LIBRARIES = roothide
 
 include $(THEOS_MAKE_PATH)/tweak.mk

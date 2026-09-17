@@ -3,6 +3,7 @@
 #import <dlfcn.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
+#import <substrate.h>
 
 static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbutton");
 
@@ -61,9 +62,7 @@ static BOOL PBHToggleMedia(void) {
 }
 
 static BOOL PBHPerformAction(NSString *action) {
-    if ([action isEqualToString:@"media"]) {
-        return PBHToggleMedia();
-    }
+    if ([action isEqualToString:@"media"]) return PBHToggleMedia();
     if ([action isEqualToString:@"flashlight"]) {
         id flashlight = PBHFlashlight();
         SEL levelSelector = NSSelectorFromString(@"flashlightLevel");
@@ -94,55 +93,68 @@ static BOOL PBHIsPurchaseAuthenticationActive(void) {
     Class overlayClass = objc_getClass("SBTransientOverlayWindow");
     if (!window || !overlayClass || ![window isKindOfClass:overlayClass]) return NO;
 
-    static NSArray<NSString *> *serviceIDs;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        serviceIDs = @[@"com.apple.PassbookUIService", @"com.apple.CoreAuthUI"];
-    });
-
-    NSString *description = window.description;
-    SEL bundleSelector = NSSelectorFromString(@"_axRemoteServiceBundleIdentifier");
     NSString *bundleID = nil;
-    if ([window respondsToSelector:bundleSelector]) {
-        bundleID = sendObject(window, bundleSelector);
-    }
-
-    for (NSString *serviceID in serviceIDs) {
-        if ([bundleID isEqualToString:serviceID] || [description containsString:serviceID]) return YES;
+    SEL bundleSelector = NSSelectorFromString(@"_axRemoteServiceBundleIdentifier");
+    if ([window respondsToSelector:bundleSelector]) bundleID = sendObject(window, bundleSelector);
+    for (NSString *serviceID in @[@"com.apple.PassbookUIService", @"com.apple.CoreAuthUI"]) {
+        if ([bundleID isEqualToString:serviceID] || [window.description containsString:serviceID]) return YES;
     }
     return NO;
 }
 
-%hook SBLockHardwareButtonActions
+static void (*PBHOriginalDouble)(id, SEL, id);
+static void (*PBHOriginalTriple)(id, SEL, id);
+static void (*PBHOriginalQuadruple)(id, SEL, id);
+static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
 
-- (void)doublePress:(id)press {
+static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
         !PBHPerformAction(PBHAction(CFSTR("DoublePressAction"), @"media"))) {
-        %orig;
+        PBHOriginalDouble(self, command, press);
     }
 }
 
-- (void)triplePress:(id)press {
+static void PBHTriple(id self, SEL command, id press) {
     if (!PBHEnabled() || !PBHPerformAction(PBHAction(CFSTR("TriplePressAction"), @"flashlight"))) {
-        %orig;
+        PBHOriginalTriple(self, command, press);
     }
 }
 
-- (void)quadruplePress:(id)press {
+static void PBHQuadruple(id self, SEL command, id press) {
     if (!PBHEnabled() || !PBHPerformAction(PBHAction(CFSTR("QuadruplePressAction"), @"ai-window"))) {
-        %orig;
+        PBHOriginalQuadruple(self, command, press);
     }
 }
 
-- (void)longPress:(UIGestureRecognizer *)recognizer {
+static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
     if (!PBHEnabled()) {
-        %orig;
-        return;
-    }
-    if (recognizer.state == UIGestureRecognizerStateBegan &&
-        !PBHPerformAction(PBHAction(CFSTR("LongPressAction"), @"ai-camera"))) {
-        %orig;
+        PBHOriginalLong(self, command, recognizer);
+    } else if (recognizer.state == UIGestureRecognizerStateBegan &&
+               !PBHPerformAction(PBHAction(CFSTR("LongPressAction"), @"ai-camera"))) {
+        PBHOriginalLong(self, command, recognizer);
     }
 }
 
-%end
+static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
+    return PBHEnabled() && ![PBHAction(key, fallback) isEqualToString:@"none"];
+}
+
+__attribute__((constructor)) static void PBHInitialize(void) {
+    @autoreleasepool {
+        Class actions = objc_getClass("SBLockHardwareButtonActions");
+        if (!actions) return;
+
+        if (PBHShouldHook(CFSTR("DoublePressAction"), @"media")) {
+            MSHookMessageEx(actions, @selector(doublePress:), (IMP)PBHDouble, (IMP *)&PBHOriginalDouble);
+        }
+        if (PBHShouldHook(CFSTR("TriplePressAction"), @"flashlight")) {
+            MSHookMessageEx(actions, @selector(triplePress:), (IMP)PBHTriple, (IMP *)&PBHOriginalTriple);
+        }
+        if (PBHShouldHook(CFSTR("QuadruplePressAction"), @"ai-window")) {
+            MSHookMessageEx(actions, @selector(quadruplePress:), (IMP)PBHQuadruple, (IMP *)&PBHOriginalQuadruple);
+        }
+        if (PBHShouldHook(CFSTR("LongPressAction"), @"ai-camera")) {
+            MSHookMessageEx(actions, @selector(longPress:), (IMP)PBHLong, (IMP *)&PBHOriginalLong);
+        }
+    }
+}

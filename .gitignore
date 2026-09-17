@@ -1,6 +1,7 @@
 .theos/
 packages/
 analysis/
+.analysis-squid/
 *.deb
 *.dylib
 __pycache__/

@@ -22,14 +22,15 @@ This is the important reason a configured double-press action does not steal the
 
 Package and preferences identifier: `com.moxuan1121.powerbutton`
 
-The Settings bundle contains a master switch plus selectors for double press, triple press, quadruple press, and long press. Every selector can dispatch one of four actions:
+The Settings bundle contains a master switch plus selectors for double press, triple press, quadruple press, and long press. Every selector can dispatch one of five actions:
 
+- None. After a SpringBoard restart, that selector is not hooked at all.
 - Media play/pause through MediaRemote.
 - Flashlight toggle through the same `AVFlashlight` interface used by the studied package.
 - RegionShot AI window through `com.moxuan.regionshot/AIWindow`.
 - RegionShot AI camera through `com.moxuan.regionshot/AICamera`.
 
-AI actions require [RegionShot](https://github.com/moxuan1121/RegionShot) to be installed. Defaults are media for double press, flashlight for triple press, AI window for quadruple press, and AI camera for long press.
+AI actions require [RegionShot](https://github.com/moxuan1121/RegionShot) to be installed. Defaults are media for double press, flashlight for triple press, AI window for quadruple press, and AI camera for long press. Changing to or from None requires a SpringBoard restart because hook registration happens once when SpringBoard starts.
 
 The bundle is installed at `/Library/PreferenceBundles/PowerButtonPreferences.bundle`. RootHide's package scheme relocates that path into the device's current randomized `.jbroot-*` root, so no device-specific `.jbroot-E05E6FF9B17D8763` value is hard-coded.
 

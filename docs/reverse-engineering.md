@@ -68,3 +68,5 @@ SBLockHardwareButtonActions.doublePress:
 ## Compatibility boundary
 
 These are private SpringBoard interfaces and can change between iOS releases. This reconstructed package supports iOS 15.x. Disabling the master switch restores every original handler, and an unavailable/unknown action falls back to the original handler. Purchase authentication is always passed through regardless of configuration.
+
+The reconstruction now registers these four methods with `MSHookMessageEx`, matching the original constructor instead of relying on automatic Logos hook setup. Each registration is conditional at SpringBoard startup; an action configured as `none` does not install its corresponding hook.
