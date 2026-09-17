@@ -25,9 +25,9 @@ class SourceContractTest(unittest.TestCase):
 
     def test_roothide_only_build(self):
         self.assertIn("THEOS_PACKAGE_SCHEME = roothide", MAKEFILE)
-        self.assertIn("TARGET = iphone:clang:16.5:15.6", MAKEFILE)
+        self.assertIn("TARGET = iphone:clang:16.5:15.0", MAKEFILE)
         control = (ROOT / "control").read_text(encoding="utf-8")
-        self.assertIn("firmware (>= 15.6), firmware (<< 15.7)", control)
+        self.assertIn("firmware (>= 15.0), firmware (<< 16.0)", control)
         self.assertIn("Package: com.moxuan1121.powerbutton", control)
         self.assertIn("Name: PowerButton", control)
 

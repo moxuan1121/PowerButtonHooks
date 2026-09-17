@@ -6,6 +6,6 @@ Description: RootHide-only side-button actions with purchase authentication pass
 Maintainer: moxuan1121
 Author: moxuan1121
 Section: Tweaks
-Depends: mobilesubstrate, preferenceloader, firmware (>= 15.6), firmware (<< 15.7)
+Depends: mobilesubstrate, preferenceloader, firmware (>= 15.0), firmware (<< 16.0)
 Conflicts: com.moxuan1121.powerbuttonhooks
 Replaces: com.moxuan1121.powerbuttonhooks
