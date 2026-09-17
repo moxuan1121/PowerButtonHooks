@@ -17,10 +17,11 @@ jobs:
       - name: Install RootHide Theos and SDK
         run: |
           git clone --recursive --depth=1 https://github.com/roothide/theos.git "$RUNNER_TEMP/theos"
+          export THEOS="$RUNNER_TEMP/theos"
           arch="$(uname -m)"
           curl -fsSL "https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-${arch}.tar.xz" \
-            | tar -xJ -C "$RUNNER_TEMP/theos/toolchain"
-          "$RUNNER_TEMP/theos/bin/install-sdk" iPhoneOS16.5
+            | tar -xJ -C "$THEOS/toolchain"
+          "$THEOS/bin/install-sdk" iPhoneOS16.5
 
       - name: Build package
         env:
