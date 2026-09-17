@@ -1,4 +1,5 @@
 import pathlib
+import struct
 import unittest
 
 
@@ -27,6 +28,20 @@ class SourceContractTest(unittest.TestCase):
         self.assertIn("TARGET = iphone:clang:latest:15.6", MAKEFILE)
         control = (ROOT / "control").read_text(encoding="utf-8")
         self.assertIn("firmware (>= 15.6), firmware (<< 15.7)", control)
+        self.assertIn("Package: com.moxuan1121.powerbutton", control)
+        self.assertIn("Name: PowerButton", control)
+
+    def test_settings_identity_and_icon_scales(self):
+        self.assertIn('@"com.moxuan1121.powerbutton"', PREFERENCES)
+        expected = {
+            "PowerButtonIcon.png": (29, 29),
+            "PowerButtonIcon@2x.png": (58, 58),
+            "PowerButtonIcon@3x.png": (87, 87),
+        }
+        for name, size in expected.items():
+            data = (ROOT / "Preferences" / "Resources" / name).read_bytes()
+            self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+            self.assertEqual(struct.unpack(">II", data[16:24]), size)
 
     def test_requested_actions_and_settings_are_wired(self):
         contracts = {

@@ -6,11 +6,11 @@ INSTALL_TARGET_PROCESSES = SpringBoard
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = PowerButtonHooks
-PowerButtonHooks_FILES = Tweak.xm
-PowerButtonHooks_CFLAGS = -fobjc-arc
-PowerButtonHooks_FRAMEWORKS = UIKit AVFoundation
-PowerButtonHooks_PRIVATE_FRAMEWORKS = MediaRemote
+TWEAK_NAME = PowerButton
+PowerButton_FILES = Tweak.xm
+PowerButton_CFLAGS = -fobjc-arc
+PowerButton_FRAMEWORKS = UIKit AVFoundation
+PowerButton_PRIVATE_FRAMEWORKS = MediaRemote
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

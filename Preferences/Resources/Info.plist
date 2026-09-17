@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleExecutable</key><string>PowerButtonHooksPreferences</string>
-<key>CFBundleIdentifier</key><string>com.moxuan1121.powerbuttonhooks.preferences</string>
-<key>CFBundleName</key><string>电源键动作</string>
+<key>CFBundleExecutable</key><string>PowerButtonPreferences</string>
+<key>CFBundleIdentifier</key><string>com.moxuan1121.powerbutton.preferences</string>
+<key>CFBundleName</key><string>PowerButton</string>
 <key>CFBundlePackageType</key><string>BNDL</string>
-<key>CFBundleVersion</key><string>1.1.0</string>
+<key>CFBundleVersion</key><string>1.1.1</string>
 <key>NSPrincipalClass</key><string>PBHRootListController</string>
 </dict></plist>

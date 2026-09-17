@@ -2,7 +2,7 @@
 #import <Preferences/PSSpecifier.h>
 #import <UIKit/UIKit.h>
 
-static NSString *const PBHDomain = @"com.moxuan1121.powerbuttonhooks";
+static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 
 @interface PBHRootListController : PSListController
 @end
@@ -67,7 +67,7 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbuttonhooks";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"电源键动作";
+    self.title = @"PowerButton";
 }
 
 @end

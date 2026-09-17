@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -16,20 +16,21 @@ jobs:
 
       - name: Install RootHide Theos and SDK
         run: |
+          brew install ldid
           git clone --recursive --depth=1 https://github.com/roothide/theos.git "$RUNNER_TEMP/theos"
           export THEOS="$RUNNER_TEMP/theos"
-          arch="$(uname -m)"
-          curl -fsSL "https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-${arch}.tar.xz" \
-            | tar -xJ -C "$THEOS/toolchain"
           "$THEOS/bin/install-sdk" iPhoneOS16.5
 
       - name: Build package
         env:
           THEOS: ${{ runner.temp }}/theos
-        run: make clean package FINALPACKAGE=1
+        run: |
+          set -o pipefail
+          make clean package FINALPACKAGE=1 2>&1 | tee build.log
+          ! grep -F "incompatible arm64e ABI compiler" build.log
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PowerButtonHooks-roothide
+          name: PowerButton-roothide
           path: packages/*.deb
           if-no-files-found: error
