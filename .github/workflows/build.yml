@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -17,10 +17,10 @@ jobs:
       - name: Install RootHide Theos and SDK
         run: |
           git clone --recursive --depth=1 https://github.com/roothide/theos.git "$RUNNER_TEMP/theos"
-          mkdir -p "$RUNNER_TEMP/theos/sdks"
-          curl -fL https://github.com/theos/sdks/releases/latest/download/iPhoneOS16.5.sdk.tar.xz \
-            -o "$RUNNER_TEMP/iPhoneOS16.5.sdk.tar.xz"
-          tar -xf "$RUNNER_TEMP/iPhoneOS16.5.sdk.tar.xz" -C "$RUNNER_TEMP/theos/sdks"
+          arch="$(uname -m)"
+          curl -fsSL "https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-${arch}.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP/theos/toolchain"
+          "$RUNNER_TEMP/theos/bin/install-sdk" iPhoneOS16.5
 
       - name: Build package
         env:
