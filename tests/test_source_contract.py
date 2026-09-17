@@ -33,6 +33,8 @@ class SourceContractTest(unittest.TestCase):
 
     def test_settings_identity_and_icon_scales(self):
         self.assertIn('@"com.moxuan1121.powerbutton"', PREFERENCES)
+        self.assertIn('forKey:@"validTitles"', PREFERENCES)
+        self.assertIn('forKey:@"validValues"', PREFERENCES)
         expected = {
             "PowerButtonIcon.png": (29, 29),
             "PowerButtonIcon@2x.png": (58, 58),
@@ -56,6 +58,10 @@ class SourceContractTest(unittest.TestCase):
 
         for key in ("Enabled", "DoublePressAction", "TriplePressAction", "QuadruplePressAction", "LongPressAction"):
             self.assertIn(f'@"{key}"', PREFERENCES)
+
+        self.assertIn("PowerButton_LIBRARIES = roothide", MAKEFILE)
+        preference_makefile = (ROOT / "Preferences" / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("PowerButtonPreferences_LIBRARIES = roothide", preference_makefile)
 
 
 if __name__ == "__main__":

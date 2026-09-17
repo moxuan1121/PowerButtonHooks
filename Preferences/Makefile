@@ -1,4 +1,4 @@
-ARCHS = arm64 arm64e
+ARCHS = arm64e
 TARGET = iphone:clang:16.5:15.0
 THEOS_PACKAGE_SCHEME = roothide
 
@@ -9,6 +9,7 @@ PowerButtonPreferences_FILES = PBHRootListController.m
 PowerButtonPreferences_CFLAGS = -fobjc-arc
 PowerButtonPreferences_FRAMEWORKS = UIKit
 PowerButtonPreferences_PRIVATE_FRAMEWORKS = Preferences
+PowerButtonPreferences_LIBRARIES = roothide
 PowerButtonPreferences_INSTALL_PATH = /Library/PreferenceBundles
 PowerButtonPreferences_RESOURCE_DIRS = Resources
 

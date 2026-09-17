@@ -43,8 +43,8 @@ static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
             cell:PSLinkListCell edit:nil];
         [action setProperty:row[1] forKey:@"key"];
         [action setProperty:row[2] forKey:@"default"];
-        [action setProperty:values forKey:@"values"];
-        [action setProperty:titles forKey:@"titles"];
+        [action setProperty:values forKey:@"validValues"];
+        [action setProperty:titles forKey:@"validTitles"];
         [action setProperty:[UIImage systemImageNamed:row[3]] forKey:@"iconImage"];
         [items addObject:action];
     }
