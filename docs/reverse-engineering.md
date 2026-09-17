@@ -60,11 +60,11 @@ SBLockHardwareButtonActions.doublePress:
         |
         +-- configured for original / disallowed while locked? --> original doublePress:
         |
-        +-- otherwise --> post custom-action notification
-                           |
-                           +-- notify-original mode --> original doublePress:
+        +-- master switch disabled / action unavailable? --> original doublePress:
+        |
+        +-- otherwise --> selected local action dispatcher
 ```
 
 ## Compatibility boundary
 
-These are private SpringBoard interfaces and can change between iOS releases. The reconstructed package targets iOS 15+ because that is the original binary's recorded deployment target. The safe failure mode is `original`: every gesture passes through unless the user explicitly selects a notification mode. Purchase authentication is always passed through regardless of configuration.
+These are private SpringBoard interfaces and can change between iOS releases. The reconstructed package targets iOS 15.x because that is the original binary's recorded deployment target. Disabling the master switch restores every original handler, and an unavailable/unknown action falls back to the original handler. Purchase authentication is always passed through regardless of configuration.

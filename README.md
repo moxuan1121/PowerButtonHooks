@@ -18,32 +18,20 @@ The double-press hook always passes through to Apple's original implementation w
 
 This is the important reason a configured double-press action does not steal the second side-button press used by Apple Pay or App Store Face ID confirmation.
 
-## Configuration/API
+## Settings and actions
 
 Preferences domain: `com.moxuan1121.powerbuttonhooks`
 
-| Key | Values | Default |
-| --- | --- | --- |
-| `DoublePressMode` | `original`, `notify`, `notify-original` | `original` |
-| `TriplePressMode` | `original`, `notify`, `notify-original` | `original` |
-| `QuadruplePressMode` | `original`, `notify`, `notify-original` | `original` |
-| `LongPressMode` | `original`, `notify`, `notify-original` | `original` |
-| `DisableWhenLocked` | Boolean | `false` |
+The Settings bundle contains a master switch plus selectors for double press, triple press, quadruple press, and long press. Every selector can dispatch one of four actions:
 
-`notify` replaces the system handler and posts a Darwin notification. `notify-original` posts the notification and then calls the original system handler. `original` is a transparent pass-through.
+- Media play/pause through MediaRemote.
+- Flashlight toggle through the same `AVFlashlight` interface used by the studied package.
+- RegionShot AI window through `com.moxuan.regionshot/AIWindow`.
+- RegionShot AI camera through `com.moxuan.regionshot/AICamera`.
 
-Notification names:
+AI actions require [RegionShot](https://github.com/moxuan1121/RegionShot) to be installed. Defaults are media for double press, flashlight for triple press, AI window for quadruple press, and AI camera for long press.
 
-- `com.moxuan1121.powerbuttonhooks.double`
-- `com.moxuan1121.powerbuttonhooks.triple`
-- `com.moxuan1121.powerbuttonhooks.quadruple`
-- `com.moxuan1121.powerbuttonhooks.long`
-
-Example from a RootHide bootstrap terminal:
-
-```sh
-defaults write com.moxuan1121.powerbuttonhooks DoublePressMode notify
-```
+The bundle is installed at `/Library/PreferenceBundles/PowerButtonHooksPreferences.bundle`. RootHide's package scheme relocates that path into the device's current randomized `.jbroot-*` root, so no device-specific `.jbroot-E05E6FF9B17D8763` value is hard-coded.
 
 ## Build
 

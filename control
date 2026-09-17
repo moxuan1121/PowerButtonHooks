@@ -1,9 +1,9 @@
 Package: com.moxuan1121.powerbuttonhooks
 Name: PowerButtonHooks
-Version: 1.0.0
+Version: 1.1.0
 Architecture: iphoneos-arm64e
-Description: RootHide-only side-button gesture hooks with purchase authentication passthrough.
+Description: RootHide-only side-button actions with purchase authentication passthrough.
 Maintainer: moxuan1121
 Author: moxuan1121
 Section: Tweaks
-Depends: mobilesubstrate, firmware (>= 15.0)
+Depends: mobilesubstrate, preferenceloader, firmware (>= 15.0), firmware (<< 16.0)

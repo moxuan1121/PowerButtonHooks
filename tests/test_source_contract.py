@@ -5,6 +5,7 @@ import unittest
 ROOT = pathlib.Path(__file__).parents[1]
 SOURCE = (ROOT / "Tweak.xm").read_text(encoding="utf-8")
 MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
+PREFERENCES = (ROOT / "Preferences" / "PBHRootListController.m").read_text(encoding="utf-8")
 
 
 class SourceContractTest(unittest.TestCase):
@@ -12,7 +13,7 @@ class SourceContractTest(unittest.TestCase):
         self.assertIn("com.apple.PassbookUIService", SOURCE)
         self.assertIn("com.apple.CoreAuthUI", SOURCE)
         self.assertIn(
-            "if (SGIsPurchaseAuthenticationActive() || SGShouldUseOriginal(mode)) {\n        %orig;",
+            "if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||",
             SOURCE,
             "double press must preserve system auth",
         )
@@ -23,6 +24,20 @@ class SourceContractTest(unittest.TestCase):
 
     def test_roothide_only_build(self):
         self.assertIn("THEOS_PACKAGE_SCHEME = roothide", MAKEFILE)
+
+    def test_requested_actions_and_settings_are_wired(self):
+        contracts = {
+            "media": "MRMediaRemoteSendCommand(2, nil)",
+            "flashlight": "setFlashlightLevel:withError:",
+            "ai-window": "com.moxuan.regionshot/AIWindow",
+            "ai-camera": "com.moxuan.regionshot/AICamera",
+        }
+        for value, implementation in contracts.items():
+            self.assertIn(implementation, SOURCE)
+            self.assertIn(f'@"{value}"', PREFERENCES)
+
+        for key in ("Enabled", "DoublePressAction", "TriplePressAction", "QuadruplePressAction", "LongPressAction"):
+            self.assertIn(f'@"{key}"', PREFERENCES)
 
 
 if __name__ == "__main__":
