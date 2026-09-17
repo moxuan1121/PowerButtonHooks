@@ -13,7 +13,7 @@ The binary loads `SpringBoardFoundation`, `MediaRemote`, UIKit, Substrate, and R
 
 ## Hook registration recovered from the constructor
 
-The arm64 constructor at `0x2cf58` calls `MSHookMessageEx`. For the class group corresponding to `SBLockHardwareButtonActions`, the registrations are:
+The arm64 constructor at `0x2cf58` calls `MSHookMessageEx`. For `SBLockHardwareButton`, the registrations are:
 
 | Selector | Replacement IMP | Original IMP slot |
 | --- | ---: | ---: |
@@ -22,7 +22,7 @@ The arm64 constructor at `0x2cf58` calls `MSHookMessageEx`. For the class group 
 | `doublePress:` | `0x420f8` | `0x5cbf8` |
 | `longPress:` | `0x42e54` | `0x5cc00` |
 
-All four replacements query `SBLockScreenManager.sharedInstance.coverSheetViewController.isAuthenticated` before dispatching to the tweak's action store (`SGActionStore sg_doAction:`). The long-press replacement also checks the recognizer's `state`, preventing repeated action dispatch as the recognizer changes state.
+The encrypted class string used for all four registrations decrypts to `SBLockHardwareButton` (20 characters plus its terminator). All four replacements query `SBLockScreenManager.sharedInstance.coverSheetViewController.isAuthenticated` before dispatching to the tweak's action store (`SGActionStore sg_doAction:`). The long-press replacement also checks the recognizer's `state`, preventing repeated action dispatch as the recognizer changes state.
 
 `hardwareButtonInteractionForLockButton` and `consumeTriplePressUp` also appear in the binary, but they belong to the accessibility-action implementation (`SGActionStore sg_triggerAccessibility`), not to the four side-button hook registrations above.
 
@@ -54,7 +54,7 @@ This is the mechanism that preserves the system's side-button confirmation trans
 side-button double press
         |
         v
-SBLockHardwareButtonActions.doublePress:
+SBLockHardwareButton.doublePress:
         |
         +-- purchase/CoreAuth transient overlay active? -- yes --> original doublePress:
         |

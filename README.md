@@ -4,7 +4,7 @@ RootHide-only iOS 15 clean-room recreation of the physical side-button gesture h
 
 ## What it hooks
 
-`SBLockHardwareButtonActions`:
+`SBLockHardwareButton`:
 
 - `doublePress:`
 - `triplePress:`

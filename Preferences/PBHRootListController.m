@@ -1,6 +1,10 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <UIKit/UIKit.h>
+#import <roothide.h>
+#import <spawn.h>
+
+extern char **environ;
 
 static NSString *const PBHDomain = @"com.moxuan1121.powerbutton";
 
@@ -83,7 +87,7 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
     if (_specifiers) return _specifiers;
     NSMutableArray *items = [NSMutableArray array];
     PSSpecifier *group = [PSSpecifier groupSpecifierWithName:@"电源键动作"];
-    [group setProperty:@"商店购买和系统认证期间，双击始终交还给系统。AI 两项需要已安装 RegionShot。选择“无”后需重启 SpringBoard 才会卸载对应挂钩。"
+    [group setProperty:@"商店购买和系统认证期间，双击始终交还给系统。选择“无”后需重启 SpringBoard 才会卸载对应挂钩。"
                   forKey:@"footerText"];
     [items addObject:group];
 
@@ -96,10 +100,10 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
     [items addObject:enabled];
 
     NSArray<NSArray<NSString *> *> *rows = @[
-        @[@"双击", @"DoublePressAction", @"media", @"playpause.fill"],
-        @[@"三连击", @"TriplePressAction", @"flashlight", @"lightbulb.fill"],
-        @[@"四连击", @"QuadruplePressAction", @"ai-window", @"sparkles"],
-        @[@"长按", @"LongPressAction", @"ai-camera", @"camera.fill"]
+        @[@"双击", @"DoublePressAction", @"media"],
+        @[@"三连击", @"TriplePressAction", @"flashlight"],
+        @[@"四连击", @"QuadruplePressAction", @"ai-window"],
+        @[@"长按", @"LongPressAction", @"ai-camera"]
     ];
 
     for (NSArray<NSString *> *row in rows) {
@@ -109,7 +113,6 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
         [action setProperty:row[1] forKey:@"key"];
         [action setProperty:row[2] forKey:@"default"];
         [action setProperty:row[0] forKey:@"actionTitle"];
-        [action setProperty:[UIImage systemImageNamed:row[3]] forKey:@"iconImage"];
         [items addObject:action];
     }
 
@@ -128,6 +131,15 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"PowerButton";
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
+        initWithTitle:@"重启 SB" style:UIBarButtonItemStylePlain
+        target:self action:@selector(respring)];
+}
+
+- (void)respring {
+    pid_t pid;
+    char *arguments[] = {"killall", "-9", "SpringBoard", NULL};
+    posix_spawn(&pid, jbroot("/usr/bin/killall"), NULL, NULL, arguments, environ);
 }
 
 @end

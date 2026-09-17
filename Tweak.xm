@@ -7,6 +7,13 @@
 
 static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbutton");
 
+@interface AVFlashlight : NSObject
+- (float)flashlightLevel;
+- (void)setFlashlightLevel:(float)level withError:(NSError **)error;
+@end
+
+static AVFlashlight *PBHSideButtonFlashlight;
+
 static BOOL PBHEnabled(void) {
     CFPreferencesAppSynchronize(PBHPreferences);
     CFPropertyListRef value = CFPreferencesCopyAppValue(CFSTR("Enabled"), PBHPreferences);
@@ -33,17 +40,8 @@ static void PBHPost(CFStringRef name) {
 }
 
 static id PBHFlashlight(void) {
-    static id flashlight;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        Class flashlightClass = objc_getClass("AVFlashlight");
-        BOOL (*sendBool)(id, SEL) = (BOOL (*)(id, SEL))objc_msgSend;
-        if (flashlightClass && [flashlightClass respondsToSelector:@selector(hasFlashlight)] &&
-            sendBool(flashlightClass, @selector(hasFlashlight))) {
-            flashlight = [flashlightClass new];
-        }
-    });
-    return flashlight;
+    if (!PBHSideButtonFlashlight) PBHSideButtonFlashlight = [objc_getClass("AVFlashlight") new];
+    return PBHSideButtonFlashlight;
 }
 
 static BOOL PBHToggleMedia(void) {
@@ -106,6 +104,13 @@ static void (*PBHOriginalDouble)(id, SEL, id);
 static void (*PBHOriginalTriple)(id, SEL, id);
 static void (*PBHOriginalQuadruple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
+static id (*PBHOriginalFlashlightInit)(id, SEL);
+
+static id PBHFlashlightInit(id self, SEL command) {
+    if (PBHSideButtonFlashlight) return PBHSideButtonFlashlight;
+    PBHSideButtonFlashlight = PBHOriginalFlashlightInit(self, command);
+    return PBHSideButtonFlashlight;
+}
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -139,22 +144,39 @@ static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
     return PBHEnabled() && ![PBHAction(key, fallback) isEqualToString:@"none"];
 }
 
+static void PBHHook(Class target, SEL selector, IMP replacement, IMP *original) {
+    if (target && class_getInstanceMethod(target, selector)) {
+        MSHookMessageEx(target, selector, replacement, original);
+    }
+}
+
 __attribute__((constructor)) static void PBHInitialize(void) {
     @autoreleasepool {
-        Class actions = objc_getClass("SBLockHardwareButtonActions");
-        if (!actions) return;
+        Class button = objc_getClass("SBLockHardwareButton");
+        if (!button) return;
+
+        NSArray<NSString *> *configuredActions = @[
+            PBHAction(CFSTR("DoublePressAction"), @"media"),
+            PBHAction(CFSTR("TriplePressAction"), @"flashlight"),
+            PBHAction(CFSTR("QuadruplePressAction"), @"ai-window"),
+            PBHAction(CFSTR("LongPressAction"), @"ai-camera")
+        ];
+        if (PBHEnabled() && [configuredActions containsObject:@"flashlight"]) {
+            Class flashlight = objc_getClass("AVFlashlight");
+            PBHHook(flashlight, @selector(init), (IMP)PBHFlashlightInit, (IMP *)&PBHOriginalFlashlightInit);
+        }
 
         if (PBHShouldHook(CFSTR("DoublePressAction"), @"media")) {
-            MSHookMessageEx(actions, @selector(doublePress:), (IMP)PBHDouble, (IMP *)&PBHOriginalDouble);
+            PBHHook(button, @selector(doublePress:), (IMP)PBHDouble, (IMP *)&PBHOriginalDouble);
         }
         if (PBHShouldHook(CFSTR("TriplePressAction"), @"flashlight")) {
-            MSHookMessageEx(actions, @selector(triplePress:), (IMP)PBHTriple, (IMP *)&PBHOriginalTriple);
+            PBHHook(button, @selector(triplePress:), (IMP)PBHTriple, (IMP *)&PBHOriginalTriple);
         }
         if (PBHShouldHook(CFSTR("QuadruplePressAction"), @"ai-window")) {
-            MSHookMessageEx(actions, @selector(quadruplePress:), (IMP)PBHQuadruple, (IMP *)&PBHOriginalQuadruple);
+            PBHHook(button, @selector(quadruplePress:), (IMP)PBHQuadruple, (IMP *)&PBHOriginalQuadruple);
         }
         if (PBHShouldHook(CFSTR("LongPressAction"), @"ai-camera")) {
-            MSHookMessageEx(actions, @selector(longPress:), (IMP)PBHLong, (IMP *)&PBHOriginalLong);
+            PBHHook(button, @selector(longPress:), (IMP)PBHLong, (IMP *)&PBHOriginalLong);
         }
     }
 }

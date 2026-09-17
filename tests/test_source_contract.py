@@ -22,8 +22,8 @@ class SourceContractTest(unittest.TestCase):
     def test_all_power_gestures_are_hooked(self):
         for selector in ("doublePress:", "triplePress:", "quadruplePress:", "longPress:"):
             self.assertIn(selector, SOURCE)
-        self.assertEqual(SOURCE.count("MSHookMessageEx(actions,"), 4)
-        self.assertIn('objc_getClass("SBLockHardwareButtonActions")', SOURCE)
+        self.assertIn('objc_getClass("SBLockHardwareButton")', SOURCE)
+        self.assertNotIn('objc_getClass("SBLockHardwareButtonActions")', SOURCE)
 
     def test_roothide_only_build(self):
         self.assertIn("THEOS_PACKAGE_SCHEME = roothide", MAKEFILE)
@@ -37,6 +37,10 @@ class SourceContractTest(unittest.TestCase):
         self.assertIn('@"com.moxuan1121.powerbutton"', PREFERENCES)
         self.assertIn("PBHActionListController", PREFERENCES)
         self.assertNotIn("PSListItemsController", PREFERENCES)
+        for symbol in ("playpause.fill", "lightbulb.fill", "sparkles", "camera.fill"):
+            self.assertNotIn(symbol, PREFERENCES)
+        self.assertIn('initWithTitle:@"重启 SB"', PREFERENCES)
+        self.assertIn('jbroot("/usr/bin/killall")', PREFERENCES)
         expected = {
             "PowerButtonIcon.png": (29, 29),
             "PowerButtonIcon@2x.png": (58, 58),
