@@ -142,8 +142,13 @@ static BOOL PBHIsActualDeviceLock(void) {
 
 static void PBHHandleUILockState(BOOL locked) {
     if (locked) {
-        if (!PBHIsActualDeviceLock() || PBHLowPowerSessionActive || !PBHEnabled() ||
-            !PBHBooleanPreference(CFSTR("LowPowerOnLock"), NO)) return;
+        if (!PBHIsActualDeviceLock()) return;
+        if (PBHLowPowerSessionActive) {
+            if (NSProcessInfo.processInfo.lowPowerModeEnabled) return;
+            PBHLowPowerSessionActive = NO;
+            PBHLowPowerEnabledByPlugin = NO;
+        }
+        if (!PBHEnabled() || !PBHBooleanPreference(CFSTR("LowPowerOnLock"), NO)) return;
 
         PBHLowPowerSessionActive = YES;
         if (!NSProcessInfo.processInfo.lowPowerModeEnabled) {
@@ -165,7 +170,9 @@ static void (*PBHOriginalTriple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
 static void (*PBHOriginalSetUILocked)(id, SEL, BOOL);
 static void (*PBHOriginalPostLockCompletedNotification)(id, SEL, BOOL);
+static BOOL (*PBHOriginalFinishUIUnlock)(id, SEL, int, id);
 static BOOL PBHUsesLockCompletionHook;
+static BOOL PBHUsesUnlockCompletionHook;
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -191,9 +198,9 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
 
 static void PBHSetUILocked(id self, SEL command, BOOL locked) {
     PBHOriginalSetUILocked(self, command, locked);
-    if (!locked) {
+    if (!locked && !PBHUsesUnlockCompletionHook) {
         PBHHandleUILockState(NO);
-    } else if (!PBHUsesLockCompletionHook) {
+    } else if (locked && !PBHUsesLockCompletionHook) {
         dispatch_async(dispatch_get_main_queue(), ^{
             PBHHandleUILockState(YES);
         });
@@ -205,6 +212,12 @@ static void PBHPostLockCompletedNotification(id self, SEL command, BOOL argument
     dispatch_async(dispatch_get_main_queue(), ^{
         PBHHandleUILockState(YES);
     });
+}
+
+static BOOL PBHFinishUIUnlock(id self, SEL command, int source, id options) {
+    BOOL finished = PBHOriginalFinishUIUnlock(self, command, source, options);
+    if (finished) PBHHandleUILockState(NO);
+    return finished;
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
@@ -246,6 +259,13 @@ __attribute__((constructor)) static void PBHInitialize(void) {
                     (IMP)PBHPostLockCompletedNotification,
                     (IMP *)&PBHOriginalPostLockCompletedNotification);
             PBHUsesLockCompletionHook = YES;
+        }
+
+        SEL unlockCompletedSelector = NSSelectorFromString(@"_finishUIUnlockFromSource:withOptions:");
+        if (class_getInstanceMethod(lockScreenManager, unlockCompletedSelector)) {
+            PBHHook(lockScreenManager, unlockCompletedSelector,
+                    (IMP)PBHFinishUIUnlock, (IMP *)&PBHOriginalFinishUIUnlock);
+            PBHUsesUnlockCompletionHook = YES;
         }
     }
 }
