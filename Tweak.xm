@@ -164,6 +164,8 @@ static void (*PBHOriginalDouble)(id, SEL, id);
 static void (*PBHOriginalTriple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
 static void (*PBHOriginalSetUILocked)(id, SEL, BOOL);
+static void (*PBHOriginalPostLockCompletedNotification)(id, SEL, BOOL);
+static BOOL PBHUsesLockCompletionHook;
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -189,13 +191,20 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
 
 static void PBHSetUILocked(id self, SEL command, BOOL locked) {
     PBHOriginalSetUILocked(self, command, locked);
-    if (locked) {
+    if (!locked) {
+        PBHHandleUILockState(NO);
+    } else if (!PBHUsesLockCompletionHook) {
         dispatch_async(dispatch_get_main_queue(), ^{
             PBHHandleUILockState(YES);
         });
-    } else {
-        PBHHandleUILockState(NO);
     }
+}
+
+static void PBHPostLockCompletedNotification(id self, SEL command, BOOL argument) {
+    PBHOriginalPostLockCompletedNotification(self, command, argument);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        PBHHandleUILockState(YES);
+    });
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
@@ -230,5 +239,13 @@ __attribute__((constructor)) static void PBHInitialize(void) {
         }
         PBHHook(lockScreenManager, lockStateSelector, (IMP)PBHSetUILocked,
                 (IMP *)&PBHOriginalSetUILocked);
+
+        SEL lockCompletedSelector = NSSelectorFromString(@"_postLockCompletedNotification:");
+        if (class_getInstanceMethod(lockScreenManager, lockCompletedSelector)) {
+            PBHHook(lockScreenManager, lockCompletedSelector,
+                    (IMP)PBHPostLockCompletedNotification,
+                    (IMP *)&PBHOriginalPostLockCompletedNotification);
+            PBHUsesLockCompletionHook = YES;
+        }
     }
 }

@@ -92,9 +92,19 @@ class SourceContractTest(unittest.TestCase):
         self.assertIn('objc_getClass("SBCoverSheetPresentationManager")', SOURCE)
         self.assertIn('@"hasBeenDismissedSinceKeybagLock"', SOURCE)
         self.assertIn("!PBHIsActualDeviceLock()", SOURCE)
+        self.assertIn('@"_postLockCompletedNotification:"', SOURCE)
+        self.assertIn("PBHPostLockCompletedNotification", SOURCE)
+        self.assertIn("PBHUsesLockCompletionHook", SOURCE)
         self.assertIn("dispatch_async(dispatch_get_main_queue()", SOURCE)
         self.assertNotIn("scheduledTimer", SOURCE)
         self.assertNotIn("dispatch_source_set_timer", SOURCE)
+
+    def test_settings_are_grouped_and_show_current_actions(self):
+        for group in ('@"总开关"', '@"电源键动作"', '@"锁屏省电"'):
+            self.assertIn(group, PREFERENCES)
+        self.assertIn("PBHActionTitle", PREFERENCES)
+        self.assertIn("get:@selector(readActionValue:)", PREFERENCES)
+        self.assertIn("[self reloadSpecifiers]", PREFERENCES)
 
 
 if __name__ == "__main__":
