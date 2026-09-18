@@ -116,7 +116,7 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
     }
 
     PSSpecifier *lowPowerGroup = [PSSpecifier groupSpecifierWithName:@"锁屏省电"];
-    [lowPowerGroup setProperty:@"锁屏时开启低电量模式；Face ID 验证后仍停留锁屏界面时继续保持，真正进入桌面或 App 后恢复锁屏前状态。"
+    [lowPowerGroup setProperty:@"设备真正锁定时开启低电量模式；下拉通知中心不会触发。Face ID 验证后仍停留锁屏界面时继续保持，进入桌面或 App 后恢复锁屏前状态。"
                        forKey:@"footerText"];
     [items addObject:lowPowerGroup];
 

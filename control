@@ -1,6 +1,6 @@
 Package: com.moxuan1121.powerbutton
 Name: PowerButton
-Version: 1.1.6
+Version: 1.1.7
 Architecture: iphoneos-arm64e
 Description: RootHide-only side-button actions and optional low power mode while locked.
 Maintainer: moxuan1121

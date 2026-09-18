@@ -89,6 +89,10 @@ class SourceContractTest(unittest.TestCase):
         self.assertIn('objc_getClass("_CDBatterySaver")', SOURCE)
         self.assertIn('@"setPowerMode:error:"', SOURCE)
         self.assertIn("PBHLowPowerEnabledByPlugin", SOURCE)
+        self.assertIn('objc_getClass("SBCoverSheetPresentationManager")', SOURCE)
+        self.assertIn('@"hasBeenDismissedSinceKeybagLock"', SOURCE)
+        self.assertIn("!PBHIsActualDeviceLock()", SOURCE)
+        self.assertIn("dispatch_async(dispatch_get_main_queue()", SOURCE)
         self.assertNotIn("scheduledTimer", SOURCE)
         self.assertNotIn("dispatch_source_set_timer", SOURCE)
 

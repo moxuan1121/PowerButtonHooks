@@ -125,9 +125,24 @@ static BOOL PBHSetLowPowerMode(BOOL enabled) {
     return setPowerMode(batterySaver, setPowerModeSelector, enabled ? 1 : 0, NULL);
 }
 
+static BOOL PBHIsActualDeviceLock(void) {
+    Class presentationManagerClass = objc_getClass("SBCoverSheetPresentationManager");
+    SEL sharedInstanceSelector = NSSelectorFromString(@"sharedInstance");
+    SEL dismissedSelector = NSSelectorFromString(@"hasBeenDismissedSinceKeybagLock");
+    if (!presentationManagerClass ||
+        ![presentationManagerClass respondsToSelector:sharedInstanceSelector]) return NO;
+
+    id (*sendObject)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+    id presentationManager = sendObject(presentationManagerClass, sharedInstanceSelector);
+    if (!presentationManager || ![presentationManager respondsToSelector:dismissedSelector]) return NO;
+
+    BOOL (*sendBool)(id, SEL) = (BOOL (*)(id, SEL))objc_msgSend;
+    return !sendBool(presentationManager, dismissedSelector);
+}
+
 static void PBHHandleUILockState(BOOL locked) {
     if (locked) {
-        if (PBHLowPowerSessionActive || !PBHEnabled() ||
+        if (!PBHIsActualDeviceLock() || PBHLowPowerSessionActive || !PBHEnabled() ||
             !PBHBooleanPreference(CFSTR("LowPowerOnLock"), NO)) return;
 
         PBHLowPowerSessionActive = YES;
@@ -174,7 +189,13 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
 
 static void PBHSetUILocked(id self, SEL command, BOOL locked) {
     PBHOriginalSetUILocked(self, command, locked);
-    PBHHandleUILockState(locked);
+    if (locked) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            PBHHandleUILockState(YES);
+        });
+    } else {
+        PBHHandleUILockState(NO);
+    }
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
