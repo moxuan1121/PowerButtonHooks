@@ -81,6 +81,17 @@ class SourceContractTest(unittest.TestCase):
         preference_makefile = (ROOT / "Preferences" / "Makefile").read_text(encoding="utf-8")
         self.assertIn("PowerButtonPreferences_LIBRARIES = roothide", preference_makefile)
 
+    def test_low_power_mode_uses_lock_events_without_polling(self):
+        self.assertIn('@"LowPowerOnLock"', PREFERENCES)
+        self.assertIn("PBHHandleUILockState", SOURCE)
+        self.assertIn('@"_reallySetUILocked:"', SOURCE)
+        self.assertIn('@"_setUILocked:"', SOURCE)
+        self.assertIn('objc_getClass("_CDBatterySaver")', SOURCE)
+        self.assertIn('@"setPowerMode:error:"', SOURCE)
+        self.assertIn("PBHLowPowerEnabledByPlugin", SOURCE)
+        self.assertNotIn("scheduledTimer", SOURCE)
+        self.assertNotIn("dispatch_source_set_timer", SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()

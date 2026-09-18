@@ -12,13 +12,18 @@ static CFStringRef const PBHPreferences = CFSTR("com.moxuan1121.powerbutton");
 - (void)setFlashlightLevel:(float)level withError:(NSError **)error;
 @end
 
-static BOOL PBHEnabled(void) {
+static BOOL PBHBooleanPreference(CFStringRef key, BOOL fallback) {
     CFPreferencesAppSynchronize(PBHPreferences);
-    CFPropertyListRef value = CFPreferencesCopyAppValue(CFSTR("Enabled"), PBHPreferences);
-    BOOL enabled = !value || (CFGetTypeID(value) == CFBooleanGetTypeID() &&
-                              CFBooleanGetValue((CFBooleanRef)value));
+    CFPropertyListRef value = CFPreferencesCopyAppValue(key, PBHPreferences);
+    BOOL enabled = value && CFGetTypeID(value) == CFBooleanGetTypeID()
+        ? CFBooleanGetValue((CFBooleanRef)value)
+        : fallback;
     if (value) CFRelease(value);
     return enabled;
+}
+
+static BOOL PBHEnabled(void) {
+    return PBHBooleanPreference(CFSTR("Enabled"), YES);
 }
 
 static NSString *PBHAction(CFStringRef key, NSString *fallback) {
@@ -102,9 +107,48 @@ static BOOL PBHIsPurchaseAuthenticationActive(void) {
     return NO;
 }
 
+static BOOL PBHLowPowerSessionActive;
+static BOOL PBHLowPowerEnabledByPlugin;
+
+static BOOL PBHSetLowPowerMode(BOOL enabled) {
+    Class batterySaverClass = objc_getClass("_CDBatterySaver");
+    SEL batterySaverSelector = NSSelectorFromString(@"batterySaver");
+    SEL setPowerModeSelector = NSSelectorFromString(@"setPowerMode:error:");
+    if (!batterySaverClass || ![batterySaverClass respondsToSelector:batterySaverSelector]) return NO;
+
+    id (*sendObject)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+    id batterySaver = sendObject(batterySaverClass, batterySaverSelector);
+    if (!batterySaver || ![batterySaver respondsToSelector:setPowerModeSelector]) return NO;
+
+    BOOL (*setPowerMode)(id, SEL, NSInteger, NSError **) =
+        (BOOL (*)(id, SEL, NSInteger, NSError **))objc_msgSend;
+    return setPowerMode(batterySaver, setPowerModeSelector, enabled ? 1 : 0, NULL);
+}
+
+static void PBHHandleUILockState(BOOL locked) {
+    if (locked) {
+        if (PBHLowPowerSessionActive || !PBHEnabled() ||
+            !PBHBooleanPreference(CFSTR("LowPowerOnLock"), NO)) return;
+
+        PBHLowPowerSessionActive = YES;
+        if (!NSProcessInfo.processInfo.lowPowerModeEnabled) {
+            PBHLowPowerEnabledByPlugin = PBHSetLowPowerMode(YES);
+        }
+        return;
+    }
+
+    if (!PBHLowPowerSessionActive) return;
+    if (PBHLowPowerEnabledByPlugin && NSProcessInfo.processInfo.lowPowerModeEnabled) {
+        PBHSetLowPowerMode(NO);
+    }
+    PBHLowPowerSessionActive = NO;
+    PBHLowPowerEnabledByPlugin = NO;
+}
+
 static void (*PBHOriginalDouble)(id, SEL, id);
 static void (*PBHOriginalTriple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
+static void (*PBHOriginalSetUILocked)(id, SEL, BOOL);
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -126,6 +170,11 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
                !PBHPerformAction(PBHAction(CFSTR("LongPressAction"), @"ai-camera"))) {
         PBHOriginalLong(self, command, recognizer);
     }
+}
+
+static void PBHSetUILocked(id self, SEL command, BOOL locked) {
+    PBHOriginalSetUILocked(self, command, locked);
+    PBHHandleUILockState(locked);
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
@@ -152,5 +201,13 @@ __attribute__((constructor)) static void PBHInitialize(void) {
         if (PBHShouldHook(CFSTR("LongPressAction"), @"ai-camera")) {
             PBHHook(button, @selector(longPress:), (IMP)PBHLong, (IMP *)&PBHOriginalLong);
         }
+
+        Class lockScreenManager = objc_getClass("SBLockScreenManager");
+        SEL lockStateSelector = NSSelectorFromString(@"_reallySetUILocked:");
+        if (!class_getInstanceMethod(lockScreenManager, lockStateSelector)) {
+            lockStateSelector = NSSelectorFromString(@"_setUILocked:");
+        }
+        PBHHook(lockScreenManager, lockStateSelector, (IMP)PBHSetUILocked,
+                (IMP *)&PBHOriginalSetUILocked);
     }
 }

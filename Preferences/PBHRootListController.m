@@ -115,6 +115,19 @@ static NSArray<NSArray<NSString *> *> *PBHActions(void) {
         [items addObject:action];
     }
 
+    PSSpecifier *lowPowerGroup = [PSSpecifier groupSpecifierWithName:@"锁屏省电"];
+    [lowPowerGroup setProperty:@"锁屏时开启低电量模式；Face ID 验证后仍停留锁屏界面时继续保持，真正进入桌面或 App 后恢复锁屏前状态。"
+                       forKey:@"footerText"];
+    [items addObject:lowPowerGroup];
+
+    PSSpecifier *lowPower = [PSSpecifier preferenceSpecifierNamed:@"锁屏自动低电量模式"
+        target:self set:@selector(setPreferenceValue:specifier:)
+        get:@selector(readPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+    [lowPower setProperty:@"LowPowerOnLock" forKey:@"key"];
+    [lowPower setProperty:@NO forKey:@"default"];
+    [lowPower setProperty:[UIImage systemImageNamed:@"battery.25"] forKey:@"iconImage"];
+    [items addObject:lowPower];
+
     _specifiers = items.copy;
     return _specifiers;
 }
