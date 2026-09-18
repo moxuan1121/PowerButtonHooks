@@ -125,7 +125,7 @@ static BOOL PBHSetLowPowerMode(BOOL enabled) {
     return setPowerMode(batterySaver, setPowerModeSelector, enabled ? 1 : 0, NULL);
 }
 
-static BOOL PBHIsActualDeviceLock(void) {
+static BOOL PBHGetCoverSheetDismissedState(BOOL *dismissed) {
     Class presentationManagerClass = objc_getClass("SBCoverSheetPresentationManager");
     SEL sharedInstanceSelector = NSSelectorFromString(@"sharedInstance");
     SEL dismissedSelector = NSSelectorFromString(@"hasBeenDismissedSinceKeybagLock");
@@ -137,7 +137,18 @@ static BOOL PBHIsActualDeviceLock(void) {
     if (!presentationManager || ![presentationManager respondsToSelector:dismissedSelector]) return NO;
 
     BOOL (*sendBool)(id, SEL) = (BOOL (*)(id, SEL))objc_msgSend;
-    return !sendBool(presentationManager, dismissedSelector);
+    *dismissed = sendBool(presentationManager, dismissedSelector);
+    return YES;
+}
+
+static BOOL PBHIsActualDeviceLock(void) {
+    BOOL dismissed;
+    return PBHGetCoverSheetDismissedState(&dismissed) && !dismissed;
+}
+
+static BOOL PBHIsActualUIUnlock(void) {
+    BOOL dismissed;
+    return PBHGetCoverSheetDismissedState(&dismissed) && dismissed;
 }
 
 static void PBHHandleUILockState(BOOL locked) {
@@ -170,9 +181,9 @@ static void (*PBHOriginalTriple)(id, SEL, id);
 static void (*PBHOriginalLong)(id, SEL, UIGestureRecognizer *);
 static void (*PBHOriginalSetUILocked)(id, SEL, BOOL);
 static void (*PBHOriginalPostLockCompletedNotification)(id, SEL, BOOL);
-static BOOL (*PBHOriginalFinishUIUnlock)(id, SEL, int, id);
+static void (*PBHOriginalCoverSheetDidDisappear)(id, SEL, BOOL);
 static BOOL PBHUsesLockCompletionHook;
-static BOOL PBHUsesUnlockCompletionHook;
+static BOOL PBHUsesCoverSheetDismissalHook;
 
 static void PBHDouble(id self, SEL command, id press) {
     if (PBHIsPurchaseAuthenticationActive() || !PBHEnabled() ||
@@ -198,7 +209,7 @@ static void PBHLong(id self, SEL command, UIGestureRecognizer *recognizer) {
 
 static void PBHSetUILocked(id self, SEL command, BOOL locked) {
     PBHOriginalSetUILocked(self, command, locked);
-    if (!locked && !PBHUsesUnlockCompletionHook) {
+    if (!locked && !PBHUsesCoverSheetDismissalHook) {
         PBHHandleUILockState(NO);
     } else if (locked && !PBHUsesLockCompletionHook) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -214,10 +225,9 @@ static void PBHPostLockCompletedNotification(id self, SEL command, BOOL argument
     });
 }
 
-static BOOL PBHFinishUIUnlock(id self, SEL command, int source, id options) {
-    BOOL finished = PBHOriginalFinishUIUnlock(self, command, source, options);
-    if (finished) PBHHandleUILockState(NO);
-    return finished;
+static void PBHCoverSheetDidDisappear(id self, SEL command, BOOL animated) {
+    PBHOriginalCoverSheetDidDisappear(self, command, animated);
+    if (PBHIsActualUIUnlock()) PBHHandleUILockState(NO);
 }
 
 static BOOL PBHShouldHook(CFStringRef key, NSString *fallback) {
@@ -261,11 +271,13 @@ __attribute__((constructor)) static void PBHInitialize(void) {
             PBHUsesLockCompletionHook = YES;
         }
 
-        SEL unlockCompletedSelector = NSSelectorFromString(@"_finishUIUnlockFromSource:withOptions:");
-        if (class_getInstanceMethod(lockScreenManager, unlockCompletedSelector)) {
-            PBHHook(lockScreenManager, unlockCompletedSelector,
-                    (IMP)PBHFinishUIUnlock, (IMP *)&PBHOriginalFinishUIUnlock);
-            PBHUsesUnlockCompletionHook = YES;
+        Class coverSheet = objc_getClass("SBCoverSheetPrimarySlidingViewController");
+        SEL coverSheetDidDisappearSelector = @selector(viewDidDisappear:);
+        if (class_getInstanceMethod(coverSheet, coverSheetDidDisappearSelector)) {
+            PBHHook(coverSheet, coverSheetDidDisappearSelector,
+                    (IMP)PBHCoverSheetDidDisappear,
+                    (IMP *)&PBHOriginalCoverSheetDidDisappear);
+            PBHUsesCoverSheetDismissalHook = YES;
         }
     }
 }
